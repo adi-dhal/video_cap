@@ -55,25 +55,24 @@ apt-get install -y \
 
 
 # Download OpenCV and build from source
+OPENCV_VERSION="4.5.5"
+echo "Downloading OpenCV source"
 cd "$INSTALL_BASE_DIR"
-wget -O "$INSTALL_BASE_DIR"/opencv.zip https://github.com/opencv/opencv/archive/4.1.0.zip
+wget -O "$INSTALL_BASE_DIR"/opencv.zip https://github.com/opencv/opencv/archive/"$OPENCV_VERSION".zip
 unzip "$INSTALL_BASE_DIR"/opencv.zip
-mv "$INSTALL_BASE_DIR"/opencv-4.1.0/ "$INSTALL_BASE_DIR"/opencv/
+mv "$INSTALL_BASE_DIR"/opencv-"$OPENCV_VERSION"/ "$INSTALL_BASE_DIR"/opencv/
 rm -rf "$INSTALL_BASE_DIR"/opencv.zip
-wget -O "$INSTALL_BASE_DIR"/opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.1.0.zip
-unzip "$INSTALL_BASE_DIR"/opencv_contrib.zip
-mv "$INSTALL_BASE_DIR"/opencv_contrib-4.1.0/ "$INSTALL_BASE_DIR"/opencv_contrib/
-rm -rf "$INSTALL_BASE_DIR"/opencv_contrib.zip
 
+echo "Configuring OpenCV"
 cd "$INSTALL_BASE_DIR"/opencv
 mkdir build
 cd build
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D OPENCV_GENERATE_PKGCONFIG=YES \
       -D CMAKE_INSTALL_PREFIX=/usr/local \
-      -D OPENCV_ENABLE_NONFREE=ON \
-      -DBUILD_opencv_xfeatures2d=OFF \
-      -D OPENCV_EXTRA_MODULES_PATH="$INSTALL_BASE_DIR"/opencv_contrib/modules ..
+      -D OPENCV_ENABLE_NONFREE=OFF \
+      -D BUILD_LIST=core,imgproc ..
+echo "Compiling OpenCV"
 make -j $(nproc)
 make install
 ldconfig
@@ -113,6 +112,7 @@ apt-get -y install \
 
 # Download FFMPEG source
 FFMPEG_VERSION="4.1.3"
+echo "Downloading FFMPEG source"
 mkdir -p "$INSTALL_BASE_DIR"/ffmpeg_sources/ffmpeg "$INSTALL_BASE_DIR"/bin
 cd "$INSTALL_BASE_DIR"/ffmpeg_sources
 wget -O ffmpeg-snapshot.tar.bz2 https://ffmpeg.org/releases/ffmpeg-"$FFMPEG_VERSION".tar.bz2
@@ -122,6 +122,7 @@ cd "$INSTALL_BASE_DIR"/ffmpeg_sources/ffmpeg
 
 
 # Install patch for FFMPEG which exposes timestamp in AVPacket
+echo "Patching FFMPEG"
 export FFMPEG_INSTALL_DIR="$INSTALL_BASE_DIR/ffmpeg_sources/ffmpeg"
 export FFMPEG_PATCH_DIR="$INSTALL_DIR/ffmpeg_patch"
 
@@ -130,26 +131,26 @@ chmod +x "$FFMPEG_PATCH_DIR"/patch.sh
 
 
 # Compile FFMPEG
+echo "Configuring FFMPEG"
 cd "$INSTALL_BASE_DIR"/ffmpeg_sources/ffmpeg && \
 ./configure \
 --prefix="$INSTALL_BASE_DIR/ffmpeg_build" \
 --pkg-config-flags="--static" \
---extra-cflags="-I$INSTALL_BASE_DIR/ffmpeg_build/include" \
---extra-ldflags="-L$INSTALL_BASE_DIR/ffmpeg_build/lib" \
+--extra-cflags="-I$INSTALL_BASE_DIR/ffmpeg_build/include -static" \
+--extra-ldflags="-L$INSTALL_BASE_DIR/ffmpeg_build/lib -static" \
 --extra-libs="-lpthread -lm" \
 --bindir="$INSTALL_BASE_DIR/bin" \
 --enable-gpl \
---enable-libass \
---enable-libfdk-aac \
 --enable-libfreetype \
 --enable-libmp3lame \
 --enable-libopus \
 --enable-libvorbis \
 --enable-libvpx \
 --enable-libx264 \
---enable-libx265 \
 --enable-nonfree \
---enable-pic && \
+--enable-pic
+
+echo "Compiling FFMPEG"
 make -j $(nproc) && \
 make install && \
 hash -r
